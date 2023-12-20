@@ -1,0 +1,6 @@
+services:
+  shortener:
+    image: shortener
+    build: .
+    ports:
+    - "8000:8000"
