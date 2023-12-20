@@ -1,12 +1,19 @@
 package main
 
 import (
+	_ "embed"
 	"log"
 	"net/http"
 )
 
+//go:embed home.html
+var home string
+
 func hello(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello world!"))
+	h := w.Header()
+	h.Add("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(home))
 }
 
 func main() {
