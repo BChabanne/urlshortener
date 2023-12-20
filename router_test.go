@@ -41,3 +41,21 @@ func TestRouterHome(t *testing.T) {
 		t.Error("200 not returned")
 	}
 }
+
+func TestRouterPostUrl(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	resp := httptest.NewRecorder()
+	handler := router(&mock{}, "https://tiny.io/")
+	handler(resp, req)
+	if resp.Result().StatusCode != http.StatusOK {
+		t.Error("mock should return ok")
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "/", nil)
+	resp = httptest.NewRecorder()
+	handler = router(&mockError{}, "https://tiny.io/")
+	handler(resp, req)
+	if resp.Result().StatusCode != http.StatusInternalServerError {
+		t.Error("mock should return error")
+	}
+}
