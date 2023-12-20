@@ -16,6 +16,8 @@ func init() {
 func main() {
 	log.Println("Server listening on", *addr)
 
-	err := http.ListenAndServe(*addr, http.HandlerFunc(router))
+	shortener := &noop{}
+
+	err := http.ListenAndServe(*addr, router(shortener))
 	log.Fatal(err)
 }

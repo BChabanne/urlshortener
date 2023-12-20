@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	_ "embed"
+	"log"
+	"net/http"
+)
 
 //go:embed home.html
 var homeHtml string
@@ -12,20 +16,40 @@ func home(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(homeHtml))
 }
 
-func postURL(w http.ResponseWriter, r *http.Request) {
+func postURL(shortener Shortener, w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println("error when parsing form", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad request"))
+		return
+	}
+
+	url := r.Form.Get("url")
+	slug, err := shortener.Add(url)
+
+	if err != nil {
+		log.Println("error shortening url", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error"))
+		return
+	}
+
 	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("URL shortener is not implemented yet"))
+	w.Write([]byte("Here is your shortlink : " + slug))
 }
 
-func router(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		home(w, r)
-		break
-	case http.MethodPost:
-		postURL(w, r)
-		break
-	default:
-		http.Error(w, "Method Not alowed", http.StatusMethodNotAllowed)
+func router(shortener Shortener) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			home(w, r)
+			break
+		case http.MethodPost:
+			postURL(shortener, w, r)
+			break
+		default:
+			http.Error(w, "Method Not alowed", http.StatusMethodNotAllowed)
+		}
 	}
 }
