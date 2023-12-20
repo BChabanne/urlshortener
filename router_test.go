@@ -42,6 +42,17 @@ func TestRouterHome(t *testing.T) {
 	}
 }
 
+func TestRouterBadMethod(t *testing.T) {
+	req := httptest.NewRequest(http.MethodHead, "/", nil)
+	resp := httptest.NewRecorder()
+	handler := router(&mock{}, "https://tiny.io/")
+	handler(resp, req)
+
+	if resp.Result().StatusCode != http.StatusMethodNotAllowed {
+		t.Error("HEAD is not a valid method")
+	}
+}
+
 func TestRouterPostUrl(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	resp := httptest.NewRecorder()
