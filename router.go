@@ -34,7 +34,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(homeHtml))
 }
 
-func postURL(shortener Shortener, w http.ResponseWriter, r *http.Request) {
+func postURL(shortener Shortener, domain string, w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println("error when parsing form", err.Error())
@@ -55,18 +55,18 @@ func postURL(shortener Shortener, w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	urlPosted.Execute(w, UrlPostedData{
-		URL: slug,
+		URL: domain + slug,
 	})
 }
 
-func router(shortener Shortener) http.HandlerFunc {
+func router(shortener Shortener, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			home(w, r)
 			break
 		case http.MethodPost:
-			postURL(shortener, w, r)
+			postURL(shortener, domain, w, r)
 			break
 		default:
 			http.Error(w, "Method Not alowed", http.StatusMethodNotAllowed)
