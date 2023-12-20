@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"errors"
 	"html/template"
 	"log"
 	"net/http"
@@ -46,7 +47,11 @@ func postURL(shortener Shortener, domain string, w http.ResponseWriter, r *http.
 	url := r.Form.Get("url")
 	slug, err := shortener.Add(url)
 
-	if err != nil {
+	if errors.Is(err, InvalidURL) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid URL"))
+		return
+	} else if err != nil {
 		log.Println("error shortening url", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Internal server error"))

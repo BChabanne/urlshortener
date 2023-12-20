@@ -19,15 +19,23 @@ func (*mock) Get(slug string) (string, error) {
 	return "noop-url", nil
 }
 
-type mockError struct{}
+type mockError struct {
+	err error
+}
 
 var _ Shortener = &mockError{}
 
-func (*mockError) Add(url string) (string, error) {
+func (mock *mockError) Add(url string) (string, error) {
+	if mock.err != nil {
+		return "", mock.err
+	}
 	return "", errors.New("shortener add url is not implemented")
 }
 
-func (*mockError) Get(slug string) (string, error) {
+func (mock *mockError) Get(slug string) (string, error) {
+	if mock.err != nil {
+		return "", mock.err
+	}
 	return "", errors.New("shortener get slug is not implemented")
 }
 
@@ -68,5 +76,15 @@ func TestRouterPostUrl(t *testing.T) {
 	handler(resp, req)
 	if resp.Result().StatusCode != http.StatusInternalServerError {
 		t.Error("mock should return error")
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "/", nil)
+	resp = httptest.NewRecorder()
+	handler = router(&mockError{
+		err: InvalidURL,
+	}, "https://tiny.io/")
+	handler(resp, req)
+	if resp.Result().StatusCode != http.StatusBadRequest {
+		t.Error("bad request should be returned on invalid url")
 	}
 }
