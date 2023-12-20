@@ -8,7 +8,7 @@ import (
 )
 
 //go:embed home.html
-var home string
+var homeHtml string
 
 var addr *string
 
@@ -17,15 +17,26 @@ func init() {
 	flag.Parse()
 }
 
-func hello(w http.ResponseWriter, r *http.Request) {
+func home(w http.ResponseWriter, r *http.Request) {
 	h := w.Header()
 	h.Add("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(home))
+	w.Write([]byte(homeHtml))
+}
+
+func router(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		home(w, r)
+		break
+	default:
+		http.Error(w, "Method Not alowed", http.StatusMethodNotAllowed)
+	}
 }
 
 func main() {
 	log.Println("Server listening on", *addr)
-	err := http.ListenAndServe(*addr, http.HandlerFunc(hello))
+
+	err := http.ListenAndServe(*addr, http.HandlerFunc(router))
 	log.Fatal(err)
 }
