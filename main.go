@@ -17,6 +17,8 @@ func hello(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	err := http.ListenAndServe("127.0.0.1:8000", http.HandlerFunc(hello))
+	addr := "127.0.0.1:8000"
+	log.Println("Server listening on", addr)
+	err := http.ListenAndServe(addr, http.HandlerFunc(hello))
 	log.Fatal(err)
 }
