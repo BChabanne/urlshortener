@@ -2,12 +2,30 @@ package main
 
 import (
 	_ "embed"
+	"html/template"
 	"log"
 	"net/http"
 )
 
 //go:embed home.html
 var homeHtml string
+
+//go:embed url-posted.html
+var urlPostedHtml string
+
+var urlPosted *template.Template
+
+type UrlPostedData struct {
+	URL string
+}
+
+func init() {
+	var err error
+	urlPosted, err = template.New("url-posted").Parse(urlPostedHtml)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func home(w http.ResponseWriter, r *http.Request) {
 	h := w.Header()
@@ -35,8 +53,10 @@ func postURL(shortener Shortener, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusNotImplemented)
-	w.Write([]byte("Here is your shortlink : " + slug))
+	w.WriteHeader(http.StatusOK)
+	urlPosted.Execute(w, UrlPostedData{
+		URL: slug,
+	})
 }
 
 func router(shortener Shortener) http.HandlerFunc {
