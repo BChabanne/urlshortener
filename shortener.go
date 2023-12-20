@@ -1,6 +1,12 @@
 package main
 
-import "errors"
+import (
+	"database/sql"
+	"errors"
+	"fmt"
+
+	_ "github.com/mattn/go-sqlite3"
+)
 
 type Shortener interface {
 	Add(url string) (string, error)
@@ -11,14 +17,33 @@ var InvalidURL = errors.New("Invalid URL")
 var InvalidSlug = errors.New("Invalid Slug")
 var SlugNotFound = errors.New("Slug Not Found")
 
-type noop struct{}
-
-var _ Shortener = &noop{}
-
-func (*noop) Add(url string) (string, error) {
-	return "noop-slug", nil
+type SqliteShortener struct {
+	db *sql.DB
 }
 
-func (*noop) Get(slug string) (string, error) {
-	return "noop-url", nil
+var _ Shortener = &SqliteShortener{}
+
+func NewSqliteShortener(name string) (*SqliteShortener, error) {
+	db, err := sql.Open("sqlite3", name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SqliteShortener{db: db}, nil
+}
+
+func NewSqliteMemoryShortener() *SqliteShortener {
+	shortener, err := NewSqliteShortener(":memory:")
+	if err != nil {
+		panic(err)
+	}
+	return shortener
+}
+
+func (*SqliteShortener) Add(url string) (string, error) {
+	return "", fmt.Errorf("%w : %s", InvalidURL, url)
+}
+
+func (*SqliteShortener) Get(slug string) (string, error) {
+	return "", fmt.Errorf("%w : %s", SlugNotFound, slug)
 }

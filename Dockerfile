@@ -2,13 +2,13 @@ FROM golang:1.20 AS builder
 
 WORKDIR /app
 
-COPY go.mod ./
+COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /urlshortener
+RUN CGO_ENABLED=1 GOOS=linux go build -o /urlshortener
 
-FROM alpine
+FROM ubuntu
 
 EXPOSE 8000
 USER 1000
