@@ -8,6 +8,8 @@ type Shortener interface {
 }
 
 var InvalidURL = errors.New("Invalid URL")
+var InvalidSlug = errors.New("Invalid Slug")
+var SlugNotFound = errors.New("Slug Not Found")
 
 type noop struct{}
 

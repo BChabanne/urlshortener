@@ -88,3 +88,51 @@ func TestRouterPostUrl(t *testing.T) {
 		t.Error("bad request should be returned on invalid url")
 	}
 }
+
+func TestGetSlug(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/slug", nil)
+	resp := httptest.NewRecorder()
+	handler := router(&mock{}, "https://tiny.io/")
+	handler(resp, req)
+	if resp.Result().StatusCode != http.StatusFound {
+		t.Error("valid slug should get redirected")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/slug", nil)
+	resp = httptest.NewRecorder()
+	handler = router(&mockError{}, "https://tiny.io/")
+	handler(resp, req)
+	if resp.Result().StatusCode != http.StatusInternalServerError {
+		t.Error("internal error expected")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/slug-not-found", nil)
+	resp = httptest.NewRecorder()
+	handler = router(&mockError{
+		err: SlugNotFound,
+	}, "https://tiny.io/")
+	handler(resp, req)
+	if resp.Result().StatusCode != http.StatusNotFound {
+		t.Error("slug not found expected")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/slug/nested", nil)
+	resp = httptest.NewRecorder()
+	handler = router(&mockError{
+		err: InvalidSlug,
+	}, "https://tiny.io/")
+	handler(resp, req)
+	if resp.Result().StatusCode != http.StatusBadRequest {
+		t.Error("nested slug is invalid")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/slug!", nil)
+	resp = httptest.NewRecorder()
+	handler = router(&mockError{
+		err: InvalidSlug,
+	}, "https://tiny.io/")
+	handler(resp, req)
+	if resp.Result().StatusCode != http.StatusBadRequest {
+		t.Error("slug with invalid charater")
+	}
+}

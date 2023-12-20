@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 )
 
 //go:embed home.html
@@ -64,11 +65,34 @@ func postURL(shortener Shortener, domain string, w http.ResponseWriter, r *http.
 	})
 }
 
+func getSlug(shortener Shortener, w http.ResponseWriter, r *http.Request) {
+	slug := strings.TrimLeft(r.URL.Path, "/")
+	url, err := shortener.Get(slug)
+	if errors.Is(err, SlugNotFound) {
+		http.NotFound(w, r)
+		return
+	} else if errors.Is(err, InvalidSlug) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad request"))
+		return
+	} else if err != nil {
+		log.Println("error while getting slug", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error"))
+		return
+	}
+	http.Redirect(w, r, url, http.StatusFound)
+}
+
 func router(shortener Shortener, domain string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			home(w, r)
+			if r.URL.Path == "/" {
+				home(w, r)
+			} else {
+				getSlug(shortener, w, r)
+			}
 			break
 		case http.MethodPost:
 			postURL(shortener, domain, w, r)
