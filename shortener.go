@@ -43,14 +43,21 @@ var InvalidSlug = errors.New("Invalid Slug")
 var SlugNotFound = errors.New("Slug Not Found")
 
 type SqliteShortener struct {
-	write *sql.DB
-	read  *sql.DB
+	write        *sql.DB
+	read         *sql.DB
+	writeChannel chan sqlInsert
 }
 
 var _ Shortener = &SqliteShortener{}
 
 //go:embed schema.sql
 var sqliteScript string
+
+type sqlInsert struct {
+	slug      string
+	url       string
+	asyncResp chan error
+}
 
 func NewSqliteShortener(name string) (*SqliteShortener, error) {
 
@@ -74,13 +81,21 @@ func NewSqliteShortener(name string) (*SqliteShortener, error) {
 		return nil, err
 	}
 
-	return &SqliteShortener{
-		read:  read,
-		write: write,
-	}, nil
+	writeChannel := make(chan sqlInsert)
+
+	shortener := &SqliteShortener{
+		read:         read,
+		write:        write,
+		writeChannel: writeChannel,
+	}
+
+	go shortener.batchInsert()
+
+	return shortener, nil
 }
 
 func (shortener *SqliteShortener) Close() error {
+	close(shortener.writeChannel)
 	errClose := shortener.write.Close()
 	errRead := shortener.read.Close()
 	return errors.Join(errClose, errRead)
@@ -116,13 +131,79 @@ func (shortener *SqliteShortener) Add(u string) (string, error) {
 
 	slug := newSlug()
 
-	// TODO handle slug collision but with 60 bits of entropy its highly not probable
-	_, err = shortener.write.Exec("INSERT INTO urls(slug,url) VALUES (?,?)", slug, u)
+	err = shortener.writeSlug(slug, u)
 	if err != nil {
 		return "", err
 	}
 
 	return slug, nil
+}
+
+func (shortener *SqliteShortener) writeSlug(slug string, url string) error {
+	asyncResp := make(chan error, 1)
+	shortener.writeChannel <- sqlInsert{
+		slug:      slug,
+		url:       url,
+		asyncResp: asyncResp,
+	}
+	return <-asyncResp
+}
+
+var maxBatchInsert = 1000
+
+func (shortener *SqliteShortener) batchInsert() {
+	inserts := make([]sqlInsert, 0, maxBatchInsert)
+	for insert := range shortener.writeChannel {
+		inserts = inserts[:0]
+		inserts = append(inserts, insert)
+
+		// batch already queued inserts
+	Batch:
+		for {
+			select {
+			case insert, ok := <-shortener.writeChannel:
+				if !ok {
+					break Batch
+				}
+				inserts = append(inserts, insert)
+				if len(inserts) >= maxBatchInsert {
+					break Batch
+				}
+			default:
+				break Batch
+			}
+		}
+
+		notifyErrs := func(err error) {
+			for _, insert := range inserts {
+				insert.asyncResp <- err
+			}
+		}
+
+		tx, err := shortener.write.Begin()
+		if err != nil {
+			notifyErrs(err)
+			continue
+		}
+
+		// TODO handle slug collision but with 60 bits of entropy its highly not probable
+		// Though it happens on bench. Behaviour is to replace old url in that case
+		// to avoir error
+		stmt, err := tx.Prepare("INSERT OR REPLACE INTO urls(slug,url) VALUES (?,?)")
+		if err != nil {
+			notifyErrs(err)
+			continue
+		}
+
+		for _, insert := range inserts {
+			_, err := stmt.Exec(insert.slug, insert.url)
+			if err != nil {
+				insert.asyncResp <- err
+			}
+		}
+		err = tx.Commit()
+		notifyErrs(err)
+	}
 }
 
 func (shortener *SqliteShortener) Get(slug string) (string, error) {
