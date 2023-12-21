@@ -1,3 +1,22 @@
+# v1.1.1
+
+Fix
+- close database
+
+```
+goos: linux
+goarch: amd64
+pkg: github.com/bchabanne/urlshortener
+cpu: Intel(R) Core(TM) i7-8550U CPU @ 1.80GHz
+BenchmarkInsertHdd-8                1176           3011703 ns/op
+BenchmarkReadHdd-8                 11851            143182 ns/op
+BenchmarkReadWriteHdd-8             2691            373156 ns/op
+BenchmarkInsertMemory-8            21308             59442 ns/op
+BenchmarkReadMemory-8              13738             83464 ns/op
+BenchmarkReadWriteMemory-8         14378             82964 ns/op
+PASS
+```
+
 # v1.1.0
 
 Performance enhancement
