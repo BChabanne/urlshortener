@@ -14,6 +14,8 @@ func BenchmarkInsertHdd(b *testing.B) {
 
 	file := b.Name() + ".sqlite"
 	os.Remove(file)
+	os.Remove(file + "-shm")
+	os.Remove(file + "-wal")
 	db, err := NewSqliteShortener(file)
 	if err != nil {
 		b.Fatal(err)
@@ -37,6 +39,8 @@ func BenchmarkReadHdd(b *testing.B) {
 
 	file := b.Name() + ".sqlite"
 	os.Remove(file)
+	os.Remove(file + "-shm")
+	os.Remove(file + "-wal")
 	db, err := NewSqliteShortener(file)
 	if err != nil {
 		b.Fatal(err)
@@ -60,6 +64,8 @@ func BenchmarkReadWriteHdd(b *testing.B) {
 
 	file := b.Name() + ".sqlite"
 	os.Remove(file)
+	os.Remove(file + "-shm")
+	os.Remove(file + "-wal")
 	db, err := NewSqliteShortener(file)
 	if err != nil {
 		b.Fatal(err)

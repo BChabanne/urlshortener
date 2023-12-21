@@ -43,7 +43,8 @@ var InvalidSlug = errors.New("Invalid Slug")
 var SlugNotFound = errors.New("Slug Not Found")
 
 type SqliteShortener struct {
-	db *sql.DB
+	write *sql.DB
+	read  *sql.DB
 }
 
 var _ Shortener = &SqliteShortener{}
@@ -52,23 +53,31 @@ var _ Shortener = &SqliteShortener{}
 var sqliteScript string
 
 func NewSqliteShortener(name string) (*SqliteShortener, error) {
-	db, err := sql.Open("sqlite3", name)
+
+	write, err := sql.Open("sqlite3", name)
 	if err != nil {
 		return nil, err
 	}
 
-	db.SetMaxIdleConns(1)
-	// TODO make a single writer and multiple readers
-	db.SetMaxOpenConns(1)
-	db.SetConnMaxLifetime(0)
-	db.SetConnMaxIdleTime(0)
+	write.SetMaxIdleConns(1)
+	write.SetMaxOpenConns(1)
+	write.SetConnMaxLifetime(0)
+	write.SetConnMaxIdleTime(0)
 
-	_, err = db.Exec(sqliteScript)
+	_, err = write.Exec(sqliteScript)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SqliteShortener{db: db}, nil
+	read, err := sql.Open("sqlite3", name)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SqliteShortener{
+		read:  read,
+		write: write,
+	}, nil
 }
 
 func NewSqliteMemoryShortener() *SqliteShortener {
@@ -76,6 +85,7 @@ func NewSqliteMemoryShortener() *SqliteShortener {
 	if err != nil {
 		panic(err)
 	}
+	shortener.read = shortener.write
 	return shortener
 }
 
@@ -101,7 +111,7 @@ func (shortener *SqliteShortener) Add(u string) (string, error) {
 	slug := newSlug()
 
 	// TODO handle slug collision but with 60 bits of entropy its highly not probable
-	_, err = shortener.db.Exec("INSERT INTO urls(slug,url) VALUES (?,?)", slug, u)
+	_, err = shortener.write.Exec("INSERT INTO urls(slug,url) VALUES (?,?)", slug, u)
 	if err != nil {
 		return "", err
 	}
@@ -114,7 +124,7 @@ func (shortener *SqliteShortener) Get(slug string) (string, error) {
 		return "", fmt.Errorf("%w : %s", InvalidSlug, slug)
 	}
 
-	rows, err := shortener.db.Query("SELECT url FROM urls WHERE slug=?", slug)
+	rows, err := shortener.read.Query("SELECT url FROM urls WHERE slug=?", slug)
 	if err != nil {
 		return "", err
 	}

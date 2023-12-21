@@ -1,3 +1,5 @@
+PRAGMA journal_mode=WAL;
+
 CREATE TABLE IF NOT EXISTS urls (
 	slug TEXT PRIMARY KEY,
 	url TEXT NOT NULL
