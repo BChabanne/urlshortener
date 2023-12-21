@@ -120,7 +120,7 @@ func bench(shorteners []Shortener, writeRatio float64, b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		dice := rand.Float64()
-		if dice >= writeRatio {
+		if dice < writeRatio {
 			add <- i
 		} else {
 			get <- struct{}{}

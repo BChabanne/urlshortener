@@ -42,4 +42,7 @@ go run .
 ```
 go test .
 go test -bench=.
+go test -bench=. -flags=hdd
 ```
+
+hdd flag is used to run test if there is a local hard drive
