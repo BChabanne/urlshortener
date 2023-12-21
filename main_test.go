@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func BenchmarkInsertMemory(b *testing.B) {
+func BenchmarkWriteMemory(b *testing.B) {
 	b.StopTimer()
 
 	db := NewSqliteMemoryShortener()

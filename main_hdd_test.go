@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func BenchmarkInsertHdd(b *testing.B) {
+func BenchmarkWriteHdd(b *testing.B) {
 	b.StopTimer()
 
 	file := b.Name() + ".sqlite"
