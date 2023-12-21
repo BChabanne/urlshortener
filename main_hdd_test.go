@@ -20,6 +20,7 @@ func BenchmarkInsertHdd(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	defer db.Close()
 
 	server := httptest.NewServer(nil)
 	defer server.Close()
@@ -45,6 +46,7 @@ func BenchmarkReadHdd(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	defer db.Close()
 
 	server := httptest.NewServer(nil)
 	defer server.Close()
@@ -70,6 +72,7 @@ func BenchmarkReadWriteHdd(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	defer db.Close()
 
 	server := httptest.NewServer(nil)
 	defer server.Close()
