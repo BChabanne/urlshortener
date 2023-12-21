@@ -41,4 +41,5 @@ go run .
 
 ```
 go test .
+go test -bench=.
 ```
