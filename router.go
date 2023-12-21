@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"html/template"
 	"log"
@@ -36,7 +37,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(homeHtml))
 }
 
-func postURL(shortener Shortener, domain string, w http.ResponseWriter, r *http.Request) {
+func postFormURL(shortener Shortener, domain string, w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		log.Println("error when parsing form", err.Error())
@@ -62,6 +63,34 @@ func postURL(shortener Shortener, domain string, w http.ResponseWriter, r *http.
 	w.WriteHeader(http.StatusOK)
 	urlPosted.Execute(w, UrlPostedData{
 		URL: domain + slug,
+	})
+}
+
+func postJsonURL(shortener Shortener, domain string, w http.ResponseWriter, r *http.Request) {
+	var body AddReq
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad request"))
+		return
+	}
+
+	slug, err := shortener.Add(body.Url)
+
+	if errors.Is(err, InvalidURL) {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid URL"))
+		return
+	} else if err != nil {
+		log.Println("error shortening url", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error"))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(AddResp{
+		Slug: slug,
 	})
 }
 
@@ -95,7 +124,12 @@ func router(shortener Shortener, domain string) http.HandlerFunc {
 			}
 			break
 		case http.MethodPost:
-			postURL(shortener, domain, w, r)
+			contentType := r.Header.Get("Content-Type")
+			if contentType == "application/json" {
+				postJsonURL(shortener, domain, w, r)
+				return
+			}
+			postFormURL(shortener, domain, w, r)
 			break
 		default:
 			http.Error(w, "Method Not alowed", http.StatusMethodNotAllowed)

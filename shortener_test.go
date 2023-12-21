@@ -2,12 +2,32 @@ package main
 
 import (
 	"errors"
+	"net/http/httptest"
 	"testing"
 )
 
-func TestShortener(t *testing.T) {
+func TestSqliteMemoryShortener(t *testing.T) {
 	shortener := NewSqliteMemoryShortener()
 
+	testSuite(t, shortener)
+}
+
+func TestClientShortener(t *testing.T) {
+	db := NewSqliteMemoryShortener()
+
+	server := httptest.NewServer(nil)
+	defer server.Close()
+
+	publicURL := server.URL + "/"
+
+	router := router(db, publicURL)
+	server.Config.Handler = router
+
+	client := NewClient(publicURL)
+	testSuite(t, client)
+}
+
+func testSuite(t *testing.T, shortener Shortener) {
 	_, err := shortener.Add("invalid url")
 	if !errors.Is(err, InvalidURL) {
 		t.Error("invalid url should be rejected")
