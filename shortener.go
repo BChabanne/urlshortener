@@ -58,6 +58,8 @@ func NewSqliteShortener(name string) (*SqliteShortener, error) {
 	}
 
 	db.SetMaxIdleConns(1)
+	// TODO make a single writer and multiple readers
+	db.SetMaxOpenConns(1)
 	db.SetConnMaxLifetime(0)
 	db.SetConnMaxIdleTime(0)
 
