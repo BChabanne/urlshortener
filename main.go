@@ -19,6 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer shortener.Close()
 
 	err = http.ListenAndServe(*addr, router(shortener, *url))
 	log.Fatal(err)

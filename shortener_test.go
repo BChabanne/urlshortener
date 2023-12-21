@@ -8,12 +8,14 @@ import (
 
 func TestSqliteMemoryShortener(t *testing.T) {
 	shortener := NewSqliteMemoryShortener()
+	defer shortener.Close()
 
 	testSuite(t, shortener)
 }
 
 func TestClientShortener(t *testing.T) {
 	db := NewSqliteMemoryShortener()
+	defer db.Close()
 
 	server := httptest.NewServer(nil)
 	defer server.Close()

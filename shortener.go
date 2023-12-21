@@ -80,6 +80,12 @@ func NewSqliteShortener(name string) (*SqliteShortener, error) {
 	}, nil
 }
 
+func (shortener *SqliteShortener) Close() error {
+	errClose := shortener.write.Close()
+	errRead := shortener.read.Close()
+	return errors.Join(errClose, errRead)
+}
+
 func NewSqliteMemoryShortener() *SqliteShortener {
 	shortener, err := NewSqliteShortener("file::memory:?cache=shared")
 	if err != nil {

@@ -11,6 +11,7 @@ func BenchmarkInsertMemory(b *testing.B) {
 	b.StopTimer()
 
 	db := NewSqliteMemoryShortener()
+	defer db.Close()
 
 	server := httptest.NewServer(nil)
 	defer server.Close()
@@ -29,6 +30,7 @@ func BenchmarkReadMemory(b *testing.B) {
 	b.StopTimer()
 
 	db := NewSqliteMemoryShortener()
+	defer db.Close()
 
 	server := httptest.NewServer(nil)
 	defer server.Close()
@@ -47,6 +49,7 @@ func BenchmarkReadWriteMemory(b *testing.B) {
 	b.StopTimer()
 
 	db := NewSqliteMemoryShortener()
+	defer db.Close()
 
 	server := httptest.NewServer(nil)
 	defer server.Close()
