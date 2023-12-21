@@ -43,6 +43,24 @@ func BenchmarkReadMemory(b *testing.B) {
 	bench(clients, 0, b)
 }
 
+func BenchmarkReadWriteMemory(b *testing.B) {
+	b.StopTimer()
+
+	db := NewSqliteMemoryShortener()
+
+	server := httptest.NewServer(nil)
+	defer server.Close()
+
+	publicURL := server.URL + "/"
+
+	router := router(db, publicURL)
+	server.Config.Handler = router
+
+	clients := makeClient(publicURL, 100)
+
+	bench(clients, 0.1, b)
+}
+
 func makeClient(publicURL string, n int) []Shortener {
 	clients := make([]Shortener, n)
 
